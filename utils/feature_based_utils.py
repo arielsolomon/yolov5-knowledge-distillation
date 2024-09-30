@@ -10,11 +10,22 @@ class FeatureBasedDistillation(nn.Module):
         self.student_model = student_model
         self.temperature = temperature
 
+
     def forward(self, x):
         teacher_features = self.extract_features(self.teacher_model, x)
         student_features = self.extract_features(self.student_model, x)
-        distillation_loss = self.feature_distillation_loss(teacher_features, student_features)
-        return distillation_loss
+
+        total_loss = 0  # Initialize total_loss
+
+        for idx, (teacher_feat, student_feat) in enumerate(zip(teacher_features[:len(student_features)], student_features)):
+
+            s_feat1 = F.interpolate(student_feat, size=(teacher_feat[-1], teacher_feat[-2]), mode='bilinear', align_corners=False)
+            # Calculate MSE loss
+            mse_loss = nn.MSELoss()
+            loss = mse_loss(teacher_features_projected, student_feat)
+            total_loss += loss
+
+        return total_loss
 
     def extract_features(self, model, x):
         features = []
