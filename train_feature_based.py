@@ -35,6 +35,7 @@ from tqdm import tqdm
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
+
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
@@ -56,7 +57,7 @@ from utils.loggers.comet.comet_utils import check_comet_resume
 from utils.fb_loss import ComputeLoss
 from utils.metrics import fitness
 from utils.plots import plot_evolve
-from utils.feature_based_utils import FeatureBasedDistillation
+from utils.feature_based_utils_1 import FeatureBasedDistillation
 from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
                                smart_resume, torch_distributed_zero_first)
 
@@ -362,9 +363,9 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                     loss *= 4.
                 distillation_module = FeatureBasedDistillation(teacher_model, model)
                 distillation_loss = distillation_module(imgs)
-                print(f'\nDistilation loss {distillation_loss} \nLoss before adding distilation loss {loss}')
+                #print(f'\nDistilation loss {distillation_loss} \nLoss before adding distilation loss {loss}')
                 loss = distillation_loss+loss
-                print(f'Loss after adding fb_dist_loss {loss}')
+                #print(f'Loss after adding fb_dist_loss {loss}')
 
             # Backward
             scaler.scale(loss).backward()
@@ -486,11 +487,11 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='/Data/federated_learning/large_vlm_distillation_ood/yolov5-knowledge-distillation/yolov5s.pt', help='initial weights path')
-    parser.add_argument('--teacher_weight', type=str, default= '/Data/federated_learning/large_vlm_distillation_ood/yolov5-knowledge-distillation/yolov5x6.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default='yolov5s.pt', help='initial weights path')
+    parser.add_argument('--teacher-weight', type=str, default= 'yolov5x6.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default='/Data/federated_learning/large_vlm_distillation_ood/yolov5-knowledge-distillation/data/coco_3cls.yaml', help='dataset.yaml path')
-    parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
+    parser.add_argument('--data', type=str, default= 'data/coco_3cls.yaml', help='dataset.yaml path')
+    parser.add_argument('--hyp', type=str, default= 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=250, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=1, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=832, help='train, val image size (pixels)')
@@ -511,7 +512,7 @@ def parse_opt(known=False):
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--workers', type=int, default=8, help='max dataloader workers (per RANK in DDP mode)')
     parser.add_argument('--project', default=ROOT / 'runs/train', help='save to project/name')
-    parser.add_argument('--name', default='exp', help='save to project/name')
+    parser.add_argument('--name', default='feature_based_train_s_from_x', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--quad', action='store_true', help='quad dataloader')
     parser.add_argument('--cos-lr', action='store_true', help='cosine LR scheduler')
