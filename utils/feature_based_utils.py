@@ -9,20 +9,32 @@ class FeatureBasedDistillation(nn.Module):
         self.teacher_model = teacher_model
         self.student_model = student_model
         self.temperature = temperature
-
+        self.adaptation_layers = nn.ModuleList()
 
     def forward(self, x):
         teacher_features = self.extract_features(self.teacher_model, x)
         student_features = self.extract_features(self.student_model, x)
 
-        total_loss = 0  # Initialize total_loss
+        total_loss = 0
 
-        for idx, (teacher_feat, student_feat) in enumerate(zip(teacher_features[:len(student_features)], student_features)):
+        for i, (teacher_feat, student_feat) in enumerate(zip(teacher_features, student_features)):
+            # Get the spatial and channel dimensions of the teacher feature map
+            t_c, t_h, t_w = teacher_feat.shape[1], teacher_feat.shape[2], teacher_feat.shape[3]
+            s_c = student_feat.shape[1]
 
-            s_feat1 = F.interpolate(student_feat, size=(teacher_feat[-1], teacher_feat[-2]), mode='bilinear', align_corners=False)
+            # Create adaptation layer if it doesn't exist
+            if len(self.adaptation_layers) <= i:
+                adaptation_layer = nn.Conv2d(s_c, t_c, kernel_size=1, bias=False)
+                self.adaptation_layers.append(adaptation_layer.to(student_feat.device))
+
+            # Adapt the student feature map
+            adapted_student_feat = self.adaptation_layers[i](student_feat)
+            
+            # Interpolate adapted student feature map to match teacher's spatial dimensions
+            s_feat_interpolated = F.interpolate(adapted_student_feat, size=(t_h, t_w), mode='bilinear', align_corners=False)
+            
             # Calculate MSE loss
-            mse_loss = nn.MSELoss()
-            loss = mse_loss(teacher_features_projected, student_feat)
+            loss = F.mse_loss(teacher_feat, s_feat_interpolated)
             total_loss += loss
 
         return total_loss
@@ -38,17 +50,6 @@ class FeatureBasedDistillation(nn.Module):
             if isinstance(m, (nn.Conv2d, nn.BatchNorm2d, nn.ReLU, nn.SiLU, Conv)):
                 features.append(x)
         return features
-
-    def feature_distillation_loss(self, teacher_features, student_features):
-        loss = 0
-        for t_feat, s_feat in zip(teacher_features, student_features):
-            if t_feat.size() != s_feat.size():
-                s_feat = F.interpolate(s_feat, size=t_feat.size()[2:], mode='bilinear', align_corners=False)
-            loss += F.mse_loss(
-                self.normalize(s_feat),
-                self.normalize(t_feat.detach())
-            )
-        return loss
 
     def normalize(self, x):
         return F.normalize(x.view(x.size(0), -1), dim=1)
