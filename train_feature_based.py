@@ -57,7 +57,7 @@ from utils.loggers.comet.comet_utils import check_comet_resume
 from utils.fb_loss import ComputeLoss
 from utils.metrics import fitness
 from utils.plots import plot_evolve
-from utils.feature_based_utils_1 import FeatureBasedDistillation
+from utils.feature_based_utils import FeatureBasedDistillation
 from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
                                smart_resume, torch_distributed_zero_first)
 
@@ -490,8 +490,8 @@ def parse_opt(known=False):
     parser.add_argument('--weights', type=str, default='yolov5s.pt', help='initial weights path')
     parser.add_argument('--teacher-weight', type=str, default= 'yolov5x6.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default= 'data/coco_3cls.yaml', help='dataset.yaml path')
-    parser.add_argument('--hyp', type=str, default= 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
+    parser.add_argument('--data', default=ROOT / 'data/coco_3cls.yaml', help='dataset.yaml path')
+    parser.add_argument('--hyp', default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=250, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=1, help='total batch size for all GPUs, -1 for autobatch')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=832, help='train, val image size (pixels)')
